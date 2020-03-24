@@ -1,26 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react'
+import { useQuery } from '@apollo/react-hooks'
+import { gql } from 'apollo-boost'
 
+const GET_LESSONS = gql`
+  query getLessons {
+  lessons {
+    id
+    name
+    done
+  }
+}
+`
 function App() {
+  const { data, loading, error } = useQuery(GET_LESSONS)
+  console.log(data)
+  
+  if(loading) return <div>Loading...</div>
+  if(error) return <div>Error fetching todos</div>
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
+    <div>
+      <h1>Lessons Learned</h1>
+      {/* Lessons Form */}
+      {data.lessons.map(item => (
+        <p key={item.id}>
+          <span>{item.name}</span>
+          <button>&times;</button>
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    ))}</div>
+    )
 }
 
 export default App;
