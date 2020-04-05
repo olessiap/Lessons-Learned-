@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { gql } from 'apollo-boost'
 import styled, {css} from 'styled-components'
@@ -32,23 +32,53 @@ const TOGGLE_LESSON = gql`
   }
 }
 `
+
+const ADD_TODO = gql`
+  mutation MyMutation2($text: String!, ) {
+  insert_lessons(objects: {name: $text}) {
+    returning {
+      name
+      id
+      done
+    }
+  }
+}
+`
  
 function App() {
+  const [ text, setText ] = useState("")
   const { data, loading, error } = useQuery(GET_LESSONS)
   const [ toggleLesson ] = useMutation(TOGGLE_LESSON)
+  const [ addLesson ] = useMutation(ADD_TODO, {
+    onCompleted: () => setText("")
+  })
   
   async function handleToggleLesson(lesson) {
     const data = await toggleLesson({variables: {id:lesson.id, done:!lesson.done}})
     console.log(data)
   }
 
+  async function handleAddLesson(e) {
+    e.preventDefault()
+    if(text.length > 0) {
+      const data = await addLesson({
+        variables: {text:text},
+        refetchQueries: [{ query: GET_LESSONS }]
+      })
+      console.log(data)
+    }
+  }
+  
   if(loading) return <div>Loading...</div>
   if(error) return <div>Error fetching todos</div>
   return (
     <div>
       <h1>Lessons Learned</h1>
-      <form>
-        <input type="text"/>
+      <form onSubmit={handleAddLesson}>
+        <input type="text"
+          onChange={(e) => setText(e.target.value)}
+          value={text}
+        />
         <input type="submit"/>
       </form>  
       <div>
