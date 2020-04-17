@@ -33,7 +33,7 @@ const TOGGLE_LESSON = gql`
 }
 `
 
-const ADD_TODO = gql`
+const ADD_LESSON = gql`
   mutation MyMutation2($text: String!, ) {
   insert_lessons(objects: {name: $text}) {
     returning {
@@ -44,14 +44,28 @@ const ADD_TODO = gql`
   }
 }
 `
+
+const DELETE_LESSON = gql`
+  mutation deleteTodo($id: Int!) {
+  delete_lessons(where: {id: {_eq: $id}}) {
+    returning {
+      done
+      id
+      name
+    }
+  }
+}
+`
  
 function App() {
   const [ text, setText ] = useState("")
   const { data, loading, error } = useQuery(GET_LESSONS)
   const [ toggleLesson ] = useMutation(TOGGLE_LESSON)
-  const [ addLesson ] = useMutation(ADD_TODO, {
+  const [ addLesson ] = useMutation(ADD_LESSON, {
     onCompleted: () => setText("")
   })
+
+  const [ deleteLesson ] = useMutation(DELETE_LESSON)
   
   async function handleToggleLesson(lesson) {
     const data = await toggleLesson({variables: {id:lesson.id, done:!lesson.done}})
@@ -66,6 +80,21 @@ function App() {
         refetchQueries: [{ query: GET_LESSONS }]
       })
       console.log(data)
+    }
+  }
+
+  async function handleDeleteLesson({ id }) {
+    const isConfirmed = window.confirm("did you really learn this lesson?")
+    if(isConfirmed) {
+      const data = await deleteLesson({ 
+        variables: { id },
+        update: cache => {
+          const prevData = cache.readQuery({ query: GET_LESSONS})
+          const newLessons = prevData.lessons.filter(lesson => lesson.id !== id)
+          cache.writeQuery({ query:GET_LESSONS, data: {lessons: newLessons}})
+          }
+        })
+      console.log("deleted the lesson", data)
     }
   }
   
@@ -85,7 +114,7 @@ function App() {
         {data.lessons.map(item => (
           <LessonItem done={item.done} onDoubleClick={() => handleToggleLesson(item)} key={item.id}>
             <span>{item.name}</span>
-            <button>&times;</button>
+            <button onClick={() => handleDeleteLesson(item)}>&times;</button>
           </LessonItem>
         ))}
       </div>
